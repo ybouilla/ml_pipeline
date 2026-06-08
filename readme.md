@@ -1,50 +1,25 @@
-# Pipelines
+# ML Pipelines
+![mlflow](https://img.shields.io/badge/mlflow-%23d9ead3.svg?style=for-the-badge&logo=numpy&logoColor=blue)
+![Apache Airflow](https://img.shields.io/badge/Apache%20Airflow-017CEE?style=for-the-badge&logo=Apache%20Airflow&logoColor=white)
+![Prometheus](https://img.shields.io/badge/Prometheus-E6522C?style=for-the-badge&logo=Prometheus&logoColor=white)
+![Static Badge](https://img.shields.io/badge/under_progress-blue)
+*Project still ongoing ...*
 
 This project features a simple ML pipeline, using :
 * mlflow, 
 * airflow
 * logging and monitoring functionalities.
 
-# A. MLflow 
-## Simple install
+## Install 
 
+* **MLflow**
 ```shell
 # in a conda env
 pip install mlflow
 conda install scikit-learn
 ``` 
+* **airflow**
 
-## Simple pipeline with mlflow
-
-### 1. Use mlflow ui 
-
-```shell
-mlflow ui
-```
-
-**import the model**
-
-```python
-import mlflow.sklearn
-
-model = mlflow.sklearn.load_model("runs:/<run_id>/model")
-```
-### Clean exp 
-
-use the script/commands
-```shell
-pkill -f mlflow
-rm -rf ./mlruns
-python clean_exp.py  # missing
-```
-
-### Use mlflow test
-
-*coming soon*
-# B. Apache airflow
-### B1. Install apache airflow
-
-run :
 ```shell
 AIRFLOW_VERSION=2.9.3
 PYTHON_VERSION=3.10
@@ -57,16 +32,41 @@ pip install graphviz
 pip install python-statsd # for monitoring
 ```
 
+* **prometheus**
 you might also need prometeus if tracking airflow metrics is required:
 first get the release from [https://github.com/prometheus/statsd_exporter/](https://github.com/prometheus/statsd_exporter/).
 second extract file from archive `tar xvsf <name-of-archive>` 
+
 you should be able to run:
 
 ```shell
 ./<name-of-archive>/statsd_exporter --statsd.listen-udp=:8125 --web.listen-address=:9102
 ```
 
-# setting airflow 's dag folder
+##  A. MLflow 
+
+### A.1. Use mlflow ui 
+
+```shell
+mlflow ui
+```
+
+### A.2 clean exp 
+
+use the script/commands
+```shell
+pkill -f mlflow
+rm -rf ./mlruns
+```
+
+### A.3. Use mlflow test
+
+*coming soon*
+
+# B. Apache airflow
+### B1. apache airflow configuration
+
+**setting airflow 's dag folder**
 set path folder
 ```shell
 export AIRFLOW__CORE__DAGS_FOLDER=/path/to/your/folder
@@ -76,30 +76,12 @@ then check if the path is ok. if this runs without error, then you are good to g
  ls $(airflow config get-value core dags_folder)
 ```
 
-
-## Misc.
-### Apache airflow: 1. commands
-
-* run the following in the bakground
-
+### B.2 Running a task with airflow 
+The airflow DAG process is stored into : `./test_airflow/minimal_airflow.py`
+Use to access the id runs.
 ```shell
-airflow scheduler &
-airflow webserver -p 8080 &
-```
-* show users
-```shell
-airflow users list
-```
-
-* list all dags
-```shell
-airflow dags list
-```
-* web interface
-```shell
-airflow standalone
-```
-
+airflow dags list-runs -d minimal_dag 
+``` 
 * scheduler
 ```shell
 airflow scheduler
@@ -121,82 +103,27 @@ airflow dags trigger minimal_dag
 airflow dags reserialize
 ```
 
-* test airflow
-airflow tasks test <dag_id> <task_id> <execution_date>
-airflow tasks test minimal_dag start_task 2024-01-01
-
-* airflows dags trigger 
-
+* backfill
+```shell
+airflow dags backfill my_pipeline 2024-01-01 2024-01-10 --max-active-runs 5
+```
 * view dag structure
 airflow dags show <dag_id>
 
 * restart/reset a dag
 airflow tasks clear <dag_id>
 
-* pipeline history
-airflow dags list-runs <dag_id>
 
-* backfill
-airflow dags backfill my_pipeline 2024-01-01 2024-01-10 --max-active-runs 5
-
-* explore states
-airflow tasks states-for-dag-run <dag_id> <execution_date>
-
-
-
-## Apache airflow: 2. Tasks and airflow
-
-airflow tasks in one step of a pipeline, it could be smth like running python fct, sql query, calling api, training model
-
-One dag per pipeline file
-
-### 2.1 Defining a DAG&Task in airflow
-
-dag definition is:
-```python
-dag = DAG(
-    dag_id="minimal_dag",
-    start_date=datetime(2024, 1, 1),
-    schedule="@daily",   
-    catchup=False
-)
-
-```
-| Setting       | Behavior                            |
-| ------------- | ----------------------------------- |
-| catchup=True  | runs all missed scheduled intervals (backfill automatic) |
-| catchup=False | runs only future schedules          |
-
-
-defining a task in python is:
-- retries: define nb of retries
-- retry_delay: define wait time in seconds
-```python
-start = PythonOperator(
-    task_id="start_task",
-    python_callable=lambda: print("Start"),
-    retries=3, # nb of retires
-    retry_delay=60, # wait time in seconds
-    dag=dag,
-)
-```
-
-### 2.2 Running a task with airflow 
-use
-```shell
-airflow dags list-runs -d minimal_dag 
-``` 
-to access the id runs
-
-## Apache Airflow: 3. metrics, monitoring and logging
-### Monitoring
+### Apache Airflow: C.3. metrics, monitoring and logging
+####  C.3.1 Monitoring
 + using statsd, promotheus
 
 How to run?
 
-start promotheus
+**start promotheus**
 ```shell
-./statsd_exporter-0.29.0.linux-386/statsd_exporter --statsd.listen-udp=:8125
+./<name-of-archive>/statsd_exporter --statsd.listen-udp=:8125
+./statsd_exporter-0.29.0.linux-386/statsd_exporter --statsd.listen-udp=:8125  --web.listen-address=:9102 # example
 ```
 
 then reach [http://localhost:9102/metrics](http://localhost:9102/metrics) or 
@@ -204,53 +131,20 @@ then reach [http://localhost:9102/metrics](http://localhost:9102/metrics) or
 curl http://localhost:9102/metrics
 ```
 
-you will get something like:
+####  C.4. Apache Airflow Logging
 
-```
-# HELP airflow_dag_processing_file_path_queue_size Metric autogenerated by statsd_exporter.
-# TYPE airflow_dag_processing_file_path_queue_size gauge
-airflow_dag_processing_file_path_queue_size 10
-# HELP airflow_dag_processing_file_path_queue_update_count Metric autogenerated by statsd_exporter.
-# TYPE airflow_dag_processing_file_path_queue_update_count counter
-airflow_dag_processing_file_path_queue_update_count 13
-# HELP airflow_dag_processing_import_errors Metric autogenerated by statsd_exporter.
-# TYPE airflow_dag_processing_import_errors gauge
-airflow_dag_processing_import_errors 0
-# HELP airflow_dag_processing_last_duration Metric autogenerated by statsd_exporter.
-# TYPE airflow_dag_processing_last_duration summary
-airflow_dag_processing_last_duration{quantile="0.5"} 0.105872
-airflow_dag_processing_last_duration{quantile="0.9"} 0.208066
-airflow_dag_processing_last_duration{quantile="0.99"} 0.507646
-airflow_dag_processing_last_duration_sum 40.228255000000004
-airflow_dag_processing_last_duration_count 269
-# HELP airflow_dag_processing_last_duration_decreasing_priority_weight_strategy Metric autogenerated by statsd_exporter.
-# TYPE airflow_dag_processing_last_duration_decreasing_priority_weight_strategy summary
-airflow_dag_processing_last_duration_decreasing_priority_weight_strategy{quantile="0.5"} 0.10811
-airflow_dag_processing_last_duration_decreasing_priority_weight_strategy{quantile="0.9"} 0.109222
-airflow_dag_processing_last_duration_decreasing_priority_weight_strategy{quantile="0.99"} 0.109222
-airflow_dag_processing_last_duration_decreasing_priority_weight_strategy_sum 0.429741
-airflow_dag_processing_last_duration_decreasing_priority_weight_strategy_count 4
-# HELP airflow_dag_processing_last_duration_event_listener Metric autogenerated by statsd_exporter.
-# TYPE airflow_dag_processing_last_duration_event_listener summary
-airflow_dag_processing_last_duration_event_listener{quantile="0.5"} 0.10455500000000001
-airflow_dag_processing_last_duration_event_listener{quantile="0.9"} 0.105782
-airflow_dag_processing_last_duration_event_listener{quantile="0.99"} 0.105782
-airflow_dag_processing_last_duration_event_listener_sum 0.419821
-airflow_dag_processing_last_duration_event_listener_count 4
-...
-```
-### 3. Logging
-
-+ access the logs
-what should be used : airflow logs -> promtail -> loki -> grafana
++ access the logs 
 logs are located at `$AIRFLOWHOME/logs/scheduler`
 
-# TODO: in mlflow; remove pickle
+---------------------------------------------------------
+
+
+#### TODO: in mlflow; remove pickle
 
 airflow commands
 
 
-### TODO: build agent ai
+####  TODO: build agent ai
 idea: build a ai agent that is lightweight enough
 
 | Component    | Choice                       |
