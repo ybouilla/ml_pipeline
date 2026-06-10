@@ -124,6 +124,11 @@ airflow tasks test minimal_dag start_task 2024-01-01
 ```shell
 airflow dags trigger minimal_dag
 ```
+* sometimes tasks are paused: to unpaused them, run
+```shell
+airflow dags unpause minimal_dag
+```
+
 * take into account changes in the code
 ```shell
 airflow dags reserialize
@@ -187,7 +192,16 @@ for everything to run, you should lunch at least:
 
 ### Monitoring through Grafana
 
+In another terminal, lunch grafana by entering:
+```shell
+sudo grafana-server   --homepath /usr/share/grafana   --config /etc/grafana/grafana.ini
+```
 
+then reach [http://localhost:3000](http://localhost:3000)
+
+You should expect from grafana the following dashboard
+
+![screenshot_grafana_metrics](./imgs/grafana_metrics_ml_pipeleine.png)
 
 ---------------------------------------------------------
 
@@ -257,9 +271,14 @@ sudo apt install grafana
 ```
 lunch grafana
 ```shell
-grafana-server
+sudo grafana-server   --homepath /usr/share/grafana   --config /etc/grafana/grafana.ini
 ```
 reach grafana : http://localhost:3000
+
+user : airflow
+password = airflow
+
+
 #### TODO: in mlflow; remove pickle
 
 airflow commands
